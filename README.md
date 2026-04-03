@@ -1,6 +1,6 @@
-# Tyler's Lancache Master Deployment
+# (DEBIAN ONLY) Tyler's Lancache Master Deployment
 
-(DEBIAN ONLY) This repository contains a zero-touch deployment script for provisioning a school Lancache server from scratch. 
+This repository contains a zero-touch deployment script for provisioning a school Lancache server from scratch. 
 
 ## Features
 * **Fully Automated Base:** Installs dependencies, Docker, and the official Lancache core.
