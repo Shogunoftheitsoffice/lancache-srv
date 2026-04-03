@@ -6,7 +6,7 @@
 * **Fully Automated Base:** Installs dependencies, Docker, and the official Lancache core.
 * **Interactive Configuration:** Pauses during installation to ask for your desired cache drive size.
 * **Network Auto-Configuration:** Automatically detects the server's current IP address, binds the DNS/Web containers to it, and updates the `.env` file.
-* **Persistent Routing:** Injects a cron job to automatically check and update the server's IP address on every reboot.
+* **Persistent Routing:** Injects a cron job to automatically check and update the server's IP address on every reboot. (This is because I do not have a static IP address.)
 * **Custom UI Dashboard:** Installs `cache-stats`, a custom terminal command that displays system health, CPU load, storage capacity, and live Hit/Miss cache efficiency.
 
 ## How to Deploy on a New Server
