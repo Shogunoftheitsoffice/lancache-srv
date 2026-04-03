@@ -2,7 +2,6 @@
 
 echo ">>> INITIATING PROJECT: LANCACHE MASTER BUILD <<<"
 
-# --- THE MAGIC FIX: DYNAMIC USER DETECTION ---
 # Find out who actually ran the script (even if they used 'sudo')
 ACTUAL_USER=${SUDO_USER:-$USER}
 # Find that user's true home directory
