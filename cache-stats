@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Define aesthetic colors
 RED='\033[1;31m'
 WHITE='\033[1;37m'
 DIM='\033[0;37m'
