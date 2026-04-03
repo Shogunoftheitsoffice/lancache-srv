@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Define paths
+ENV_FILE="/home/tyler/lancache/.env"
+LANCACHE_DIR="/home/tyler/lancache"
+
+# Get the primary IP address of the server
+CURRENT_IP=$(ip route get 1.1.1.1 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}')
+
+# Read the current IP listed in the .env file
+OLD_IP=$(grep -oP '^LANCACHE_IP=\K.*' "$ENV_FILE")
+
+# Check if the IP has changed
+if [ "$CURRENT_IP" != "$OLD_IP" ]; then
+    echo "Network change detected! Old IP: $OLD_IP -> New IP: $CURRENT_IP"
+    
+    # Use sed to find and replace the IP addresses in the .env file
+    sed -i "s/^LANCACHE_IP=.*/LANCACHE_IP=$CURRENT_IP/" "$ENV_FILE"
+    sed -i "s/^DNS_BIND_IP=.*/DNS_BIND_IP=$CURRENT_IP/" "$ENV_FILE"
+    
+    echo "Updated .env file. Restarting Lancache containers..."
+    
+    # Restart the docker containers so they bind to the new IP
+    cd "$LANCACHE_DIR"
+    docker compose down
+    docker compose up -d
+    
+    echo "Lancache is back online at $CURRENT_IP"
+else
+    echo "IP matches. No changes needed."
+fi

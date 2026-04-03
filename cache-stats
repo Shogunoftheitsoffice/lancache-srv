@@ -1,0 +1,111 @@
+#!/bin/bash
+
+# Define aesthetic colors
+RED='\033[1;31m'
+WHITE='\033[1;37m'
+DIM='\033[0;37m'
+NC='\033[0m' 
+BOLD='\033[1m'
+
+clear
+echo -e "${RED}>>> INITIALIZING SENSORS & CALCULATING VOLUME...${NC}"
+CACHE_SIZE=$(sudo du -sh /home/tyler/lancache/data 2>/dev/null | awk '{print $1}')
+
+while true; do
+    # Fetch Lightweight Data
+    SERVER_IP=$(hostname -I | awk '{print $1}')
+    UPTIME=$(uptime -p | sed 's/up //')
+    
+    # CPU Math (Converts load average into a readable percentage based on core count)
+    CORES=$(nproc)
+    LOAD1=$(cat /proc/loadavg | awk '{print $1}')
+    CPU_PCT=$(awk "BEGIN {printf \"%.1f\", ($LOAD1 / $CORES) * 100}")
+    
+    RAM_USAGE=$(free -m | awk 'NR==2{printf "%sMB / %sMB (%.1f%%)", $3,$2,$3*100/$2}')
+    
+    # Storage Math
+    DRIVE_TOTAL=$(df -h /home/tyler/lancache/data | awk 'NR==2 {print $2}')
+    DRIVE_USED=$(df -h /home/tyler/lancache/data | awk 'NR==2 {print $3}')
+    DRIVE_PCT=$(df -h /home/tyler/lancache/data | awk 'NR==2 {print $5}')
+    
+    DNS_STATUS=$(docker inspect -f '{{.State.Status}}' lancache-dns-1 2>/dev/null || echo "offline")
+    WEB_STATUS=$(docker inspect -f '{{.State.Status}}' lancache-monolithic-1 2>/dev/null || echo "offline")
+
+    HITS=0
+    MISSES=0
+    RATIO=0.0
+    if [ -f /home/tyler/lancache/logs/access.log ]; then
+        HITS=$(tail -n 1000 /home/tyler/lancache/logs/access.log | grep -c "HIT")
+        MISSES=$(tail -n 1000 /home/tyler/lancache/logs/access.log | grep -c "MISS")
+        TOTAL=$((HITS + MISSES))
+        if [ "$TOTAL" -gt 0 ]; then
+            RATIO=$(awk "BEGIN {printf \"%.1f\", ($HITS / $TOTAL) * 100}")
+        fi
+    fi
+
+    # Calculate Terminal Dimensions & Centering Padding
+    TERM_LINES=$(tput lines 2>/dev/null || echo 24)
+    TERM_COLS=$(tput cols 2>/dev/null || echo 80)
+    
+    BLOCK_WIDTH=55
+    BLOCK_HEIGHT=23
+    
+    PAD_X=$(( (TERM_COLS - BLOCK_WIDTH) / 2 ))
+    PAD_Y=$(( (TERM_LINES - BLOCK_HEIGHT) / 2 ))
+    
+    # Ensure padding doesn't break on extremely tiny windows
+    [[ $PAD_X -lt 0 ]] && PAD_X=0
+    [[ $PAD_Y -lt 0 ]] && PAD_Y=0
+    
+    SPACES=$(printf '%*s' "$PAD_X" '')
+
+    # Print the Centered Interface
+    clear
+    
+    # Foolproof Vertical Padding
+    for ((i=0; i<PAD_Y; i++)); do
+        echo ""
+    done
+    
+    echo -e "${SPACES}${RED}${BOLD}/// LANCACHE CORE SYSTEM ///${NC}"
+    echo -e "${SPACES}${DIM}-------------------------------------------------------${NC}"
+
+    echo -e "${SPACES}${RED} > ${WHITE}System Resources:${NC}"
+    echo -e "${SPACES}   Server IP:     ${RED}${SERVER_IP}${NC}"
+    echo -e "${SPACES}   Uptime:        ${WHITE}${UPTIME}${NC}"
+    echo -e "${SPACES}   CPU Usage:     ${WHITE}${CPU_PCT}%${NC} ${DIM}(Avg load across $CORES cores)${NC}"
+    echo -e "${SPACES}   Memory (RAM):  ${WHITE}${RAM_USAGE}${NC}"
+
+    echo -e "${SPACES}"
+    echo -e "${SPACES}${RED} > ${WHITE}Storage Utilization:${NC}"
+    echo -e "${SPACES}   Cache Volume:  ${RED}${CACHE_SIZE}${NC} downloaded games"
+    echo -e "${SPACES}   Drive Status:  ${WHITE}${DRIVE_USED}${NC} used of ${WHITE}${DRIVE_TOTAL}${NC} [${RED}${DRIVE_PCT}${NC}]"
+
+    echo -e "${SPACES}"
+    echo -e "${SPACES}${RED} > ${WHITE}Service Health:${NC}"
+    if [ "$DNS_STATUS" == "running" ]; then echo -e "${SPACES}   DNS Routing:   [${RED}ONLINE${NC}]"; else echo -e "${SPACES}   DNS Routing:   [${DIM}OFFLINE${NC}]"; fi
+    if [ "$WEB_STATUS" == "running" ]; then echo -e "${SPACES}   Web Server:    [${RED}ONLINE${NC}]"; else echo -e "${SPACES}   Web Server:    [${DIM}OFFLINE${NC}]"; fi
+
+    echo -e "${SPACES}"
+    echo -e "${SPACES}${RED} > ${WHITE}Recent Traffic (Last 1000 requests):${NC}"
+    echo -e "${SPACES}   Efficiency:    [${RED}${RATIO}%${NC} Hit Ratio]"
+    echo -e "${SPACES}   Local Hits:    ${RED}${HITS}${NC}"
+    echo -e "${SPACES}   WAN Misses:    ${WHITE}${MISSES}${NC}"
+    echo -e "${SPACES}${DIM}-------------------------------------------------------${NC}"
+    echo -e "${SPACES}"
+    
+    # Interactive prompt
+    echo -e "${SPACES}${DIM} [ Auto-refreshing | 'L' Live Logs | 'Q' Quit ]${NC}"
+    
+    read -t 2 -n 1 -s -r key
+    
+    if [[ $key = "l" || $key = "L" ]]; then
+        clear
+        echo -e "${RED}>>> CONNECTING TO LIVE FEED... (Press Ctrl+C to exit)${NC}\n"
+        tail -f /home/tyler/lancache/logs/access.log
+        exit 0
+    elif [[ $key = "q" || $key = "Q" ]]; then
+        clear
+        exit 0
+    fi
+done
