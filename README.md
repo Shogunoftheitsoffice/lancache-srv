@@ -1,4 +1,4 @@
-# (DEBIAN ONLY) Tyler's Lancache Master Deployment
+# (DEBIAN) Tyler's Lancache Master Deployment
 
 This repository contains a zero-touch deployment script for provisioning a school Lancache server from scratch. 
 
